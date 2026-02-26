@@ -1,62 +1,62 @@
-# High-Level Architecture: CLI Agent Orchestrator (CAO)
+# Kiến trúc Tổng quan: CLI Agent Orchestrator (CAO)
 
-The **CLI Agent Orchestrator (CAO)** is a lightweight, hierarchical multi-agent system designed to coordinate multiple AI agent sessions within `tmux` terminals. It enables complex problem-solving by delegating tasks from a **Supervisor** agent to specialized **Worker** agents.
+**CLI Agent Orchestrator (CAO)** là một hệ thống đa tác vụ (multi-agent) phân cấp, nhẹ, được thiết kế để điều phối nhiều phiên làm việc của các tác nhân AI (AI agents) bên trong các cửa sổ terminal `tmux`. Nó cho phép giải quyết các vấn đề phức tạp bằng cách ủy quyền nhiệm vụ từ một tác nhân **Giám sát (Supervisor)** cho các tác nhân **Thực thi (Worker)** chuyên biệt.
 
-## 1. System Overview
+## 1. Tổng quan Hệ thống
 
-CAO follows a **Supervisor-Worker** (Hierarchical) architecture. A central orchestrator manages the lifecycle and communication of various agents, each running in its own isolated environment.
+CAO tuân theo kiến trúc **Giám sát - Thực thi (Supervisor-Worker)**. Một bộ điều phối trung tâm quản lý vòng đời và sự giao tiếp của các tác nhân khác nhau, mỗi tác nhân chạy trong môi trường biệt lập của riêng mình.
 
-### Key Architectural Pillars:
-*   **Hierarchical Structure:** A central "Supervisor" agent maintains project context and delegates sub-tasks to specialized "Workers" (e.g., developers, testers, reviewers).
-*   **Session Isolation:** Each agent operates within a dedicated `tmux` session or window, ensuring context (files, environment) remains clean and focused.
-*   **Centralized Orchestration:** The `cao-server` acts as the system's brain, tracking terminal states and routing messages via a REST API.
-
----
-
-## 2. Core Components
-
-### A. Orchestrator (`cao-server`)
-The local HTTP server (running on port 9889) that maintains the global state of the orchestration.
-*   **Terminal Management:** Tracks every agent terminal via a unique `CAO_TERMINAL_ID` and its status (`IDLE`, `PROCESSING`, `COMPLETED`, `ERROR`).
-*   **Messaging Hub:** Implements an "Inbox" system for each terminal to allow asynchronous communication between agents.
-
-### B. Agents
-Agents are defined by **Profiles** (YAML/Markdown) that specify roles and instructions.
-*   **Supervisor Agent:** The primary interface for the user, responsible for planning and delegation.
-*   **Worker Agents:** Specialized agents spawned for specific tasks (e.g., `code_reviewer`, `security_auditor`).
-*   **Providers:** Underlying AI engines (Kiro CLI, Claude Code, Codex CLI, Amazon Q Developer CLI).
-
-### C. Tools (MCP Integration)
-CAO uses the **Model Context Protocol (MCP)** to expose orchestration as tools:
-*   `handoff`: Synchronous task transfer (caller waits for result).
-*   `assign`: Asynchronous task delegation (runs in background).
-*   `send_message`: Direct inter-agent communication for feedback loops.
+### Các trụ cột kiến trúc chính:
+*   **Cấu trúc Phân cấp:** Một tác nhân "Giám sát" trung tâm duy trì ngữ cảnh của dự án và ủy quyền các nhiệm vụ con cho các "Nhân viên" chuyên biệt (ví dụ: lập trình viên, người kiểm thử, người đánh giá).
+*   **Cô lập Phiên làm việc:** Mỗi tác nhân hoạt động trong một phiên hoặc cửa sổ `tmux` riêng biệt, đảm bảo ngữ cảnh (tệp tin, môi trường) luôn sạch sẽ và tập trung.
+*   **Điều phối Tập trung:** `cao-server` đóng vai trò là bộ não của hệ thống, theo dõi trạng thái của các terminal và định tuyến tin nhắn thông qua REST API.
 
 ---
 
-## 3. Workflow & Data Flow
+## 2. Các Thành phần Chính
 
-1.  **Initialization:** The user starts `cao-server` and launches the **Supervisor**.
-2.  **Task Analysis:** The Supervisor receives a goal and identifies the need for specialized assistance.
-3.  **Delegation:** The Supervisor uses an MCP tool (e.g., `assign`) to spawn a **Worker** in a new `tmux` window.
-4.  **Execution:** The Worker performs the task independently in its isolated environment.
-5.  **Reporting:** Upon completion, the Worker sends a message back to the Supervisor's inbox.
-6.  **Synthesis:** The Supervisor monitors its inbox, collects all results, and provides a final response to the user.
+### A. Bộ điều phối (Orchestrator - `cao-server`)
+Máy chủ HTTP cục bộ (chạy trên cổng 9889) duy trì trạng thái toàn cầu của quá trình điều phối.
+*   **Quản lý Terminal:** Theo dõi mọi terminal của tác nhân thông qua một `CAO_TERMINAL_ID` duy nhất và trạng thái của nó (`IDLE`, `PROCESSING`, `COMPLETED`, `ERROR`).
+*   **Trung tâm Nhắn tin:** Triển khai hệ thống "Hộp thư đến" (Inbox) cho mỗi terminal để cho phép giao tiếp bất đồng bộ giữa các tác nhân.
+
+### B. Tác nhân (Agents)
+Các tác nhân được định nghĩa bởi các **Hồ sơ (Profiles)** (YAML/Markdown) quy định vai trò và hướng dẫn.
+*   **Tác nhân Giám sát (Supervisor Agent):** Giao diện chính cho người dùng, chịu trách nhiệm lập kế hoạch và ủy quyền.
+*   **Tác nhân Thực thi (Worker Agents):** Các tác nhân chuyên biệt được tạo ra cho các nhiệm vụ cụ thể (ví dụ: `code_reviewer`, `security_auditor`).
+*   **Nhà cung cấp (Providers):** Các công cụ AI nền tảng (Kiro CLI, Claude Code, Codex CLI, Amazon Q Developer CLI).
+
+### C. Công cụ (Tools - Tích hợp MCP)
+CAO sử dụng **Giao thức Ngữ cảnh Mô hình (Model Context Protocol - MCP)** để cung cấp các khả năng điều phối dưới dạng công cụ:
+*   `handoff`: Bàn giao nhiệm vụ đồng bộ (người gọi chờ kết quả).
+*   `assign`: Giao nhiệm vụ bất đồng bộ (chạy ngầm).
+*   `send_message`: Giao tiếp trực tiếp giữa các tác nhân để tạo vòng lặp phản hồi.
 
 ---
 
-## 4. Technology Stack
+## 3. Quy trình & Luồng Dữ liệu
 
-*   **Language:** Python 3.10+
-*   **Terminal Multiplexer:** `tmux` (for session management and UI isolation)
-*   **Protocol:** Model Context Protocol (MCP) & REST API
-*   **Environment Management:** `uv` (for fast Python package handling)
-*   **Communication:** Asynchronous Messaging (Inbox-based)
+1.  **Khởi tạo:** Người dùng khởi động `cao-server` và chạy tác nhân **Giám sát**.
+2.  **Phân tích Nhiệm vụ:** Giám sát nhận mục tiêu và xác định nhu cầu hỗ trợ từ các chuyên gia.
+3.  **Ủy quyền:** Giám sát sử dụng công cụ MCP (ví dụ: `assign`) để tạo một **Nhân viên** trong một cửa sổ `tmux` mới.
+4.  **Thực thi:** Nhân viên thực hiện nhiệm vụ một cách độc lập trong môi trường biệt lập của mình.
+5.  **Báo cáo:** Khi hoàn thành, Nhân viên gửi tin nhắn phản hồi về hộp thư đến của Giám sát.
+6.  **Tổng hợp:** Giám sát theo dõi hộp thư, thu thập tất cả kết quả và đưa ra phản hồi cuối cùng cho người dùng.
 
 ---
 
-## 5. Design Patterns
+## 4. Công nghệ Sử dụng
 
-*   **Hierarchical Multi-Agent System (HMAS):** Clear division of labor between a coordinator and specialists.
-*   **Sidecar/Orchestrator Pattern:** Using a separate server process to manage state and communication for CLI tools.
-*   **Event-Driven Communication:** Decoupling agents via inboxes and status tracking.
+*   **Ngôn ngữ:** Python 3.10+
+*   **Trình quản lý Terminal:** `tmux` (để quản lý phiên và cô lập giao diện)
+*   **Giao thức:** Model Context Protocol (MCP) & REST API
+*   **Quản lý Môi trường:** `uv` (để xử lý nhanh các gói Python)
+*   **Giao tiếp:** Nhắn tin bất đồng bộ (dựa trên Inbox)
+
+---
+
+## 5. Các Mẫu Thiết kế (Design Patterns)
+
+*   **Hệ thống Đa tác vụ Phân cấp (HMAS):** Phân chia rõ ràng công việc giữa bộ điều phối và các chuyên gia.
+*   **Mẫu Sidecar/Orchestrator:** Sử dụng một tiến trình máy chủ riêng biệt để quản lý trạng thái và giao tiếp cho các công cụ CLI.
+*   **Giao tiếp hướng Sự kiện:** Ghép nối lỏng lẻo các tác nhân thông qua hộp thư và theo dõi trạng thái.
