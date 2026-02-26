@@ -1,0 +1,29 @@
+[project]
+name = "multi-agents-orchestrate"
+version = "0.1.0"
+description = "A hierarchical multi-agent orchestration system using tmux and MCP."
+authors = [
+    {name = "Cuong Le", email = "cuongle2503@gmail.com"}
+]
+dependencies = [
+    "fastapi>=0.100.0",
+    "uvicorn>=0.22.0",
+    "typer>=0.9.0",
+    "rich>=13.0.0",
+    "libtmux>=0.23.0",
+    "pydantic>=2.0.0",
+    "pyyaml>=6.0.0",
+    "httpx>=0.24.0",
+]
+requires-python = ">=3.10"
+
+[project.scripts]
+cao = "cao.main:app"
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
